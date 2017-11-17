@@ -3,9 +3,15 @@
 import requests
 import time
 from bs4 import BeautifulSoup
-from config import UPS_NAME_AFTER_LOGIN
+from config import UPS_NAME_AFTER_LOGIN, FILES_FOLDER
 
-FILES_FOLDER = 'files/'
+def log_in_required(func):
+    def inner(*args, **kwargs):
+        if args[0].logged_in:
+            return func(*args, **kwargs)
+        else:
+            print("Couldn't perform function {}, wrong login or password!".format(func.__name__))
+    return inner
 
 class UPSRaportFetcher:
 
@@ -72,17 +78,19 @@ class UPSRaportFetcher:
         self.logged_in = False
 
     def log_in(self):
-        login_url = 'https://www.ups.com/lasso/login'
-        response = self.session.get(login_url)
-        soup = BeautifulSoup(response.content)
-        self.login_payload['CSRFToken'] = self.get_csrf_token(soup)
-        time.sleep(1)
+        if self.login_payload['userID'] and self.login_payload['password']:
+            login_url = 'https://www.ups.com/lasso/login'
+            response = self.session.get(login_url)
+            soup = BeautifulSoup(response.content)
+            self.login_payload['CSRFToken'] = self.get_csrf_token(soup)
+            time.sleep(1)
 
-        response = self.session.post(login_url, data=self.login_payload)
-        self.logged_in = UPS_NAME_AFTER_LOGIN in response.text
-        print('Logged in? {}'.format(self.logged_in))
-        time.sleep(1)
+            response = self.session.post(login_url, data=self.login_payload)
+            self.logged_in = UPS_NAME_AFTER_LOGIN in response.text
+            print('Logged in? {}'.format(self.logged_in))
+            time.sleep(1)
 
+    @log_in_required
     def get_csrf_token(self, soup):
         token = soup.find('input', {'name': 'CSRFToken'})
         return token['value']
@@ -100,6 +108,7 @@ class UPSRaportFetcher:
             'Upgrade-Insecure-Requests': '1'
         })
 
+    @log_in_required
     def get_shipping_history(self):
         url = 'https://www.ups.com/uis/create?loc=pl_PL&ActionOriginPair=ShippingHistory___StartSession'
         request = self.session.get(url)
@@ -113,10 +122,12 @@ class UPSRaportFetcher:
         csv_data = self.download_csv_shipping_history()
         self.csv_data = csv_data.content.decode('utf-8')
 
+    @log_in_required
     def download_csv_shipping_history(self):
         csv_data = self.session.get('https://www.ups.com/uis/ExportPage?loc=pl_PL', data={'loc':'pl_PL'})
         return csv_data
 
+    @log_in_required
     def save_csv_shipping_history_to_file(self, filename):
         with open(FILES_FOLDER + str(filename) + '.csv', 'w') as file:
             file.write(self.csv_data)
@@ -131,14 +142,8 @@ class UPSRaportFetcher:
         return rows_number
 
     def main(self):
-        if self.login_payload != '':
-            self.log_in()
-            if self.logged_in == True:
-                self.get_shipping_history()
-            else:
-                print('Wrong login or password!')
-        else:
-            print('Can\'t sign in without login credentials')
+        self.log_in()
+        self.get_shipping_history()
 
 if __name__ == '__main__':
     raport_fetcher = UPSRaportFetcher(userID='', password='', days=1, displayPerPage=50)

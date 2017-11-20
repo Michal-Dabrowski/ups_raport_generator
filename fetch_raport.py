@@ -6,11 +6,17 @@ from bs4 import BeautifulSoup
 from config import UPS_NAME_AFTER_LOGIN, FILES_FOLDER
 
 def log_in_required(func):
+
+    class LogInError(Exception):
+        def __init__(self, message):
+            super(LogInError, self).__init__(message)
+            self.message = message
+
     def inner(*args, **kwargs):
         if args[0].logged_in:
             return func(*args, **kwargs)
         else:
-            print("Couldn't perform function {}, wrong login or password!".format(func.__name__))
+            raise LogInError("Couldn't perform function {}, wrong login or password!".format(func.__name__))
     return inner
 
 class UPSRaportFetcher:

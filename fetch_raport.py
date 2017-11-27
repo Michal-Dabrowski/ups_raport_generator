@@ -96,7 +96,6 @@ class UPSRaportFetcher:
             print('Logged in? {}'.format(self.logged_in))
             time.sleep(1)
 
-    @log_in_required
     def get_csrf_token(self, soup):
         token = soup.find('input', {'name': 'CSRFToken'})
         return token['value']
@@ -147,11 +146,8 @@ class UPSRaportFetcher:
         rows_number = len(rows) - 1
         return rows_number
 
-    def main(self):
-        self.log_in()
-        self.get_shipping_history()
-
 if __name__ == '__main__':
     raport_fetcher = UPSRaportFetcher(userID='', password='', days=1, displayPerPage=50)
-    raport_fetcher.main()
+    raport_fetcher.log_in()
+    raport_fetcher.get_shipping_history()
     raport_fetcher.save_csv_shipping_history_to_file('csv_shipping_history')

@@ -32,11 +32,13 @@ class CSVData:
         data_frame.drop_duplicates(inplace=True)
         self.reset_index(data_frame)
         return data_frame
-    """
+
     def drop_anulowane(self, data_frame):
-        data_frame[data_frame['Wskaźnik anulowania'] != 'Anulowane']
+        #not cancelled packages have 'nan' in 'Wskaźnik anulowania' column
+        data_frame = data_frame[data_frame['Wskaźnik anulowania'].isnull()]
+        self.reset_index(data_frame)
         return data_frame
-    """
+
     def reset_index(self, data_frame):
         data_frame.reset_index(inplace=True, drop=True)
         data_frame.index += 1
@@ -61,6 +63,7 @@ class CSVData:
         self.read_csv_pandas()
         self.filter_columns()
         self.data_frame_processed = self.drop_duplicates_in_data_frame(self.data_frame_processed)
+        self.data_frame_processed = self.drop_anulowane(self.data_frame_processed)
         self.data_frame_processed = self.rename_columns(self.data_frame_processed)
 
 class CreateExcelFile:

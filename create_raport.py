@@ -4,7 +4,7 @@ import pandas
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment, Font, Border, Side
 from openpyxl import Workbook
-from config import FILES_FOLDER
+from config import FILES_FOLDER, CSV_FILENAME, XLSX_FILENAME
 
 class CSVData:
     """
@@ -30,9 +30,16 @@ class CSVData:
 
     def drop_duplicates_in_data_frame(self, data_frame):
         data_frame.drop_duplicates(inplace=True)
+        self.reset_index(data_frame)
+        return data_frame
+    """
+    def drop_anulowane(self, data_frame):
+        data_frame[data_frame['Wskaźnik anulowania'] != 'Anulowane']
+        return data_frame
+    """
+    def reset_index(self, data_frame):
         data_frame.reset_index(inplace=True, drop=True)
         data_frame.index += 1
-        return data_frame
 
     def rename_columns(self, data_frame):
         names_pairs = {
@@ -122,9 +129,9 @@ class CreateExcelFile:
         self.add_title_at_bottom()
 
 if __name__ == '__main__':
-    data_frame = CSVData('csv_shipping_history.csv')
+    data_frame = CSVData(CSV_FILENAME)
     data_frame.main()
 
-    excel_file = CreateExcelFile('Raport UPS', data_frame=data_frame.data_frame_processed)
+    excel_file = CreateExcelFile(XLSX_FILENAME, data_frame=data_frame.data_frame_processed)
     excel_file.main()
-    excel_file.save_excel_file('test')
+    excel_file.save_excel_file(XLSX_FILENAME)
